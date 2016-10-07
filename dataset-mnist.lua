@@ -1,4 +1,5 @@
 require 'torch'
+require 'image'
 require 'paths'
 
 mnist = {}
@@ -42,43 +43,95 @@ function mnist.loadDataset(fileName, maxLoad, sequenceLength)
    data:add(-data:min())
    data:mul(1/data:max())
    --labels = labels[{{1,nExample}}]
+    local h = data:size(3)
+    local w = data:size(4)
    print('<mnist> done')
 
     local function expandToSequence(img, length)
-        local h = img:size(3)
-        local w = img:size(4)
-        local cH = math.floor(h/4) -- curtain of height h/4
-        local step = 2 -- steplentgh between frames
-        local location = torch.random(1,h-cH)
-        local direction = torch.random(0,1)*2 - 1 -- 1:down, -1: up
 
-        -- Allocate sequence
-        local sequence = {}
-        for i=1,length do
-            table.insert(sequence, img:clone())
-        end
+        -- Draw dancing digits on blank canvas
+        local iw = w*3/4 -- image scale is 3/4
+        local iwC = w - iw
+        local px = torch.random(1,iwC+1)
+        local py = torch.random(1,iwC+1)
+        local dx = torch.random(-1,1)
+        local dy = torch.random(-1,1)
+        local img = image.scale(img[1], iw)
 
+        local labelSequence = {}
         for i=1,length do
-            if cH+location+direction*step > h or location + direction*step < 1 then
-                -- Flip direction of curtain if out of bounds
-                direction = (-1)*direction
+            -- Flip direction if dancing of the edge
+            if px+dx > iwC+1 or px+dx < 1 then
+                dx = (-1)*dx
             end
-            location = location + direction*step
-            local frame = sequence[i]
-            frame[{{1},{1},{location,location+cH}}]:fill(0)
+            if py+dy > iwC+1 or py+dy < 1 then
+                dy = (-1)*dy
+            end
+            px = px + dx
+            py = py + dy
+            local frame = torch.zeros(1,1,h,w)
+            frame[{1,{1},{py,py+iw-1},{px,px+iw-1}}] = img
+            table.insert(labelSequence, frame)
         end
-        return sequence
+
+        -- Occlude image with curtain
+        local cH = math.floor(h/6) -- curtain of height h/6
+        local step = 2 -- steplentgh between frames
+        local lc = torch.random(1,h-cH)
+        local dc = torch.random(0,1)*2 - 1 -- 1:down, -1: up
+
+        dataSequence = {}
+        for i=1,length do
+            if cH+lc+dc*step > h or lc + dc*step < 1 then
+                -- Flip direction of curtain if out of bounds
+                dc = (-1)*dc
+            end
+            lc = lc + dc*step
+            local frame = labelSequence[i]:clone()
+            frame[{{1},{1},{lc,lc+cH}}]:fill(0)
+            table.insert(dataSequence, frame)
+        end
+        return dataSequence, labelSequence
     end
 
-   local dataset = {}
+   local inputset = {}
+   local labelset = {}
    for i=1,nExample do
-       table.insert(dataset, expandToSequence(data[{{i}}], sequenceLength))
+       local dataSequence, labelSequence = expandToSequence(data[{{i}}], sequenceLength)
+       table.insert(inputset, dataSequence)
+       table.insert(labelset, labelSequence)
    end
 
+   local dataset = {}
+   dataset.data = inputset
+   dataset.label = labelset
    function dataset:size()
       return nExample
    end
 
-   return dataset, data
+    function dataset:getMinibatch()
+        local indecies = torch.Tensor(opt.batchSize)
+        indecies:random(1,dataset:size())
+        --local label = torch.Tensor(opt.batchSize, 1, h, w):cuda()
+        --for i=1,opt.batchSize do
+        --    label[i] = trainLabels[indecies[i]]:cuda()
+        --end
+
+        local inputBatch = {}
+        local labelBatch = {}
+        for i=1,opt.rho do
+            local frames = torch.Tensor(opt.batchSize, 1, h, w):cuda()
+            local labels = torch.Tensor(opt.batchSize, 1, h, w):cuda()
+            for j=1,opt.batchSize do
+                frames[{{j}}] = dataset.data[indecies[j]][i]:cuda()
+                labels[{{j}}] = dataset.label[indecies[j]][i]:cuda()
+            end
+            table.insert(inputBatch, frames)
+            table.insert(labelBatch, labels)
+        end
+        return inputBatch, labelBatch
+    end
+
+   return dataset, labelset
 end
 

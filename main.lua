@@ -6,10 +6,12 @@ require 'image'
 dofile 'model.lua'
 dofile 'data.lua'
 
-model = torch.load('model.t7')
-if opt.backend == 'cudnn' then model:cuda() end
+if opt.preTrained then 
+    model = torch.load('model.t7')
+    if opt.backend == 'cudnn' then model:cuda() end
+end
 
-input, label = getMinibatch()
+input, label = trainSet:getMinibatch()
 output = model:forward(input)
 
 dofile 'train.lua'
