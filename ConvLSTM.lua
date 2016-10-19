@@ -11,6 +11,7 @@ require 'nn'
 require 'dpnn'
 require 'rnn'
 
+-- !!! HARD CODED BACKEND IS SET HERE :
 local backend_name = 'cudnn'
 
 local backend

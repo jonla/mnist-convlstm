@@ -1,37 +1,11 @@
 require 'dataset-mnist'
 
-
-
+-- Create datasets and store in RAM
 trainSet = mnist.loadTrainSet(opt.trainingSamples, opt.rho)
 valSet = mnist.loadTestSet(opt.validationSamples, opt.rho)
 testSet = mnist.loadTestSet(10, 100)
 
-
---function getMinibatch()
---    local h = trainData[1][1]:size(3)
---    local w = trainData[1][1]:size(4)
---    local indecies = torch.Tensor(opt.batchSize)
---    indecies:random(1,trainData:size())
---    --local label = torch.Tensor(opt.batchSize, 1, h, w):cuda()
---    --for i=1,opt.batchSize do
---    --    label[i] = trainLabels[indecies[i]]:cuda()
---    --end
---
---    local inputBatch = {}
---    local labelBatch = {}
---    for i=1,opt.rho do
---        local frames = torch.Tensor(opt.batchSize, 1, h, w):cuda()
---        local labels = torch.Tensor(opt.batchSize, 1, h, w):cuda()
---        for j=1,opt.batchSize do
---            frames[{{j}}] = trainData[indecies[j]][i]:cuda()
---            labels[{{j}}] = trainLabels[indecies[j]][i]:cuda()
---        end
---        table.insert(inputBatch, frames)
---        table.insert(labelBatch, labels)
---    end
---    return inputBatch, labelBatch
---end
-
+-- Function to test inference on one of the test sequences
 function test(index, maxTime)
     local index = index or 1
     local sequence = testSet.data[index]
@@ -52,6 +26,7 @@ function test(index, maxTime)
 end
 
 
+-- Function to play given sequence
 function simulateSequence(sequence)
     local zoom = 8
     local h = sequence[1]:size(3)*zoom

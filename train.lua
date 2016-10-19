@@ -7,6 +7,8 @@ local batchNumber
 local trainingCost
 
 -- High level training function, executing 'opt.nBatches' mini batches
+-- Function also validates one batch per training batch
+-- (can be commented out)
 function train()
     trainingCost = {}
     batchNumber = 0
@@ -25,7 +27,6 @@ function train()
     for i, val in pairs(trainingCost) do
         s = s + val
     end
-    --table.insert(overallCost.training, s/#trainingCost)
 end
 
 local timer = torch.Timer()
@@ -69,13 +70,14 @@ function validateBatch(inputs, labels)
     collectgarbage()
 end
 
+-- Plots training and validation cost
 function plotCost(avgWidth)
+    local avgWidth = avgWidth or 50
     if not gnuplot then
         require 'gnuplot'
     end
 
     local function avgCost(costT)
-        local avgWidth = avgWidth or 50
         local nAvg = (#cost - #cost%avgWidth)/avgWidth
         local costAvg = torch.Tensor(nAvg)
         local costAvgX = torch.range(1, nAvg):mul(avgWidth)

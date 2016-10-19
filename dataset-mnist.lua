@@ -50,7 +50,7 @@ function mnist.loadDataset(fileName, maxLoad, sequenceLength)
     local function expandToSequence(img, length)
 
         -- Draw dancing digits on blank canvas
-        local iw = w*3/4 -- image scale is 3/4
+        local iw = w*2/4 -- image scale is 1/2
         local iwC = w - iw
         local px = torch.random(1,iwC+1)
         local py = torch.random(1,iwC+1)
@@ -75,7 +75,7 @@ function mnist.loadDataset(fileName, maxLoad, sequenceLength)
         end
 
         -- Occlude image with curtain
-        local cH = math.floor(h/6) -- curtain of height h/6
+        local cH = math.floor(h/3) -- curtain of height h/3
         local step = 2 -- steplentgh between frames
         local lc = torch.random(1,h-cH)
         local dc = torch.random(0,1)*2 - 1 -- 1:down, -1: up
